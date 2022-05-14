@@ -6,18 +6,41 @@
 ## Часть 1 Анализ данных.   numpy и pandas
 ###  Задание: импорт данных
 
-Возьмите данные по вызовам пожарных служб в Москве за 2015-2019 годы:
-https://video.ittensive.com/python-advanced/data-5283-2019-10-04.utf.csv
-Получите из них фрейм данных (таблицу значений). По этому фрейму вычислите среднее значение вызовов пожарных машин в месяц в одном округе Москвы, округлив до целых
-_Примечание: найдите среднее значение вызовов, без учета года_
+Задание: импорт данных
+Возьмите данные по замерам вибрации в Филиале за 2002-2022 годы:
+d:\GitHub\Advance-Py\Замеры_VDO.csv
+Получите из них фрейм данных (таблицу значений). По этому фрейму вычислите среднее значение замеров в месяц  по цехам в Филиале, округлив до целого, а также для сравнения медиану.
+Примечание: найдите среднее значение замеров, без учета года
+Результат, например: 5 и 4.
+
 
      Решение:    
 >import pandas as pd
-data = pd.read_csv("https://video.ittensive.com/python-advanced/data-5283-2019-10-04.utf.csv", delimiter=";")
-print (data["Calls"].mean().round())
+data = pd.read_csv("d:\GitHub\Advance-Py\Замеры_VDO.csv", na_values="NA", delimiter=";")
+data = data.drop(columns=data.iloc[:, 2:len(data.columns)])
+>#print(data.head)
+col = "Дата"
+data[col] = data[col].str.slice(0,7)
+col = "Ст_№_ГПА"
+data[col] = data[col].astype(str)
+data[col] = data[col].str.slice(0,1)
+data = data.rename (columns= {'Ст_№_ГПА': 'КЦ'}) 
+data['copy КЦ'] = data['КЦ']
+>#print(data.head)
+>
+>data_grp = data\
+    .groupby(['Дата','КЦ'], as_index=False)\
+    .aggregate({'Дата':'count'})
+print(data_grp)
+>
+>data_grp2 =data_grp.groupby("КЦ").mean()
+data_grp3 =data_grp.groupby("КЦ").median()
+print(data_grp2)
+print ("Ср.знач замеров по КЦ за месяц = ", data_grp2["Дата"].mean().round())
+print ("Медианное знач замеров по КЦ за месяц = ", data_grp3["Дата"].median().round())
 
-
->493.0
+>Ср.знач замеров по КЦ за месяц =  5.0
+Ср.знач замеров по КЦ за месяц =  4.0
 --- 
 
 ## Часть 1 Анализ данных.   Индексы и объединение фреймов
@@ -147,40 +170,62 @@ Name: Тикер, dtype: object
 ## Часть 2 Импорт и парсинг данных
 ## 2.3 Веб-скрепинг
 ## Задание: парсинг интернет-магазина
-Используя парсинг данных с маркетплейса beru.ru, найдите, на сколько литров отличается общий объем холодильников Саратов 263 и Саратов 452?
-Для парсинга можно использовать зеркало страницы beru.ru с результатами для холодильников Саратов по адресу:
-video.ittensive.com/data/018-python-advanced/beru.ru/
+
 
    Решение:    
->import requests
-from bs4 import BeautifulSoup
-headers = {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 YaBrowser/19.12.0.358 Yowser/2.5 Safari/537.36"}
-r = requests.get("https://beru.ru/search?cvredirect=2&suggest_reqId=27865074762321487883702093457804&text=%D1%81%D0%B0%D1%80%D0%B0%D1%82%D0%BE%D0%B2", headers=headers)
-html = BeautifulSoup(r.content)
-print (r.content)
-links = html.find_all("a", {"class": "grid-snippet__react-link"})
-link_263 = ''
-link_452 = ''
-for link in links:
-    if str(link).find("Саратов 263") > -1:
-        link_263 = link["href"]
-    if str(link).find("Саратов 452") > -1:
-        link_452 = link["href"]
+>import time
+from msilib.schema import CheckBox
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+browser =webdriver.Chrome("d:\GitHub\Advance-Py\chromedriver.exe")
+browser.maximize_window()
+browser.get("http://live.skillbox.ru")
+daniil_pilipenko= '//*[@id="#app"]/main/div/div/div[2]/div[1]/div[2]/ul/li[1]/label/span'
 >
->def find_volume (link):
-    r = requests.get("https://beru.ru" + link)
-    html = BeautifulSoup(r.content)
-    volume = html.find_all("span", {"class": "_112Tad-7AP"})
-    return int(''.join(i for i in volume[2].get_text() if i.isdigit()))
->
->if link_263 and link_452:
-    volume_263 = find_volume(link_263)
-    volume_452 = find_volume(link_452)
-    diff = max(volume_263, volume_452) - min(volume_263, volume_452)
-    print (diff)
+>checkBox = browser.find_element(by=By.XPATH, value=daniil_pilipenko)
+checkBox.click()
+time.sleep(5)
+webinars = browser.find_elements(by=By.CSS_SELECTOR, value='.webinar-card__title')
+for webinar in webinars:
+    print(webinar.text)
 
-
->73
+ВЫВОД:
+>Готовимся начать карьеру
+Узнаём о профессии больше
+Знакомимся с языками на практике
+Программируем на Java: подводим итоги
+Работаем с коллекциями и файлами в Java
+Знакомимся с Java: синтаксис и основы ООП
+Как стать java разработчиком?
+Как выбрать профессию в программировании в 2022 году?
+Создание веб-сайта
+Хакинг на Java: подводим итоги
+Хакинг на Java: тайно снимаем рабочий стол и отправляем в Dropbox
+Хакинг на Java: первая программа за 1,5 часа
+Карьера в сфере IT
+Управление и аналитика в разработке ПО
+Программирование и тестирование ПО
+Знакомство с Enterprise-разработкой. Пишем корпоративный чат на Java
+Хакинг на Java: подводим итоги
+Хакинг на Java: тайно записываем звук с микрофона и отправляем в Dropbox
+Хакинг на Java: основы языка, объекты и классы
+Fullstack-разработчик. Итоги интенсива
+Fullstack-разработчик: Технологии backend-разработки. Фреймворк Symfony и язык PHP
+Какие навыки нужны разработчику для карьерного роста
+Fullstack-разработчик: Погружение во frontend-разработку. Фреймворк Vue.js и язык JavaScript
+Подведение итогов интенсива по созданию сайта
+JavaScript, PHP и MySQL
+Вёрстка и размещение сайта в интернете
+Профессионализм программиста: потенциал или опыт
+Java-интенсив. Подведение итогов
+Исключения, многопоточность и работа с файлами
+Основы: пишем первое приложение
+Интенсив по веб-разработке. Подведение итогов
+Frontend- и backend-программирование: PHP и JavaScript
+Интенсив по веб-разработке. Подведение итогов
+Создание интернет-магазина
+Веб-разработка: обзор технологий
+Java-интенсив. Подведение итогов
 ---
 ## Часть 2 Импорт и парсинг данных
 ## 2.4 Работа с SQL
